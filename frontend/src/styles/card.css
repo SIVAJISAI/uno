@@ -1,0 +1,82 @@
+.uno-card {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  min-width: 110px;
+  min-height: 160px;
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+  align-items: center;
+  justify-items: center;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.uno-card.small {
+  min-width: 84px;
+  min-height: 120px;
+  padding: 12px;
+}
+
+.uno-card:hover:not(:disabled) {
+  transform: translateY(-6px);
+}
+
+.uno-card.red {
+  background: linear-gradient(180deg, #ff5959 0%, #a32d2d 100%);
+}
+
+.uno-card.blue {
+  background: linear-gradient(180deg, #4c8bff 0%, #1a4d9e 100%);
+}
+
+.uno-card.green {
+  background: linear-gradient(180deg, #3ee18e 0%, #1a7c4f 100%);
+}
+
+.uno-card.yellow {
+  background: linear-gradient(180deg, #f7d53b 0%, #bd8f11 100%);
+  color: #1b1b1b;
+}
+
+.uno-card.disabled {
+  opacity: 0.45;
+}
+
+.uno-card .number {
+  font-size: 2.4rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.uno-card .color-label {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.88rem;
+}
+
+.card-back {
+  width: 58px;
+  height: 86px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.18), rgba(27, 33, 57, 0.95));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  position: relative;
+}
+
+.card-back::before,
+.card-back::after {
+  content: '';
+  position: absolute;
+  inset: 12px;
+  border-radius: 12px;
+}
+
+.card-back::before {
+  background: radial-gradient(circle at center, rgba(120, 180, 255, 0.25), transparent 55%);
+}
+
+.card-back::after {
+  border: 1px dashed rgba(255, 255, 255, 0.16);
+}

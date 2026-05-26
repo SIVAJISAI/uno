@@ -1,0 +1,267 @@
+.game-view {
+  width: 100%;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+}
+
+.game-shell {
+  width: min(1180px, 100%);
+  display: grid;
+  gap: 22px;
+  grid-template-columns: minmax(320px, 320px) 1fr;
+}
+
+.game-status-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #c7d1e9;
+}
+
+.table-area {
+  position: relative;
+  min-height: 620px;
+  background: radial-gradient(circle at center, rgba(79, 120, 255, 0.12), transparent 55%),
+    linear-gradient(120deg, rgba(1, 19, 67, 0.95), rgba(10, 26, 55, 0.96));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 36px;
+  overflow: hidden;
+}
+
+.table-center {
+  position: absolute;
+  inset: 50%;
+  width: 300px;
+  height: 260px;
+  transform: translate(-50%, -50%);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  justify-items: center;
+  gap: 12px;
+}
+
+.draw-deck,
+.discard-card {
+  width: 140px;
+  height: 190px;
+  border-radius: 24px;
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  position: relative;
+}
+
+.draw-deck {
+  background: linear-gradient(180deg, #1a62ff 0%, #0632a5 100%);
+  color: #fff;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.draw-deck.disabled {
+  opacity: 0.4;
+}
+
+.draw-deck small {
+  margin-top: 8px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.discard-card {
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.direction-indicator {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  border: 1px dashed rgba(255, 255, 255, 0.16);
+}
+
+.direction-indicator::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  box-shadow: inset 0 0 30px rgba(255, 255, 255, 0.06);
+}
+
+.direction-indicator .arrow {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border: 3px solid #65d6ff;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+  top: 18px;
+  right: 40px;
+}
+
+.player-circle {
+  position: absolute;
+  width: 200px;
+  min-height: 120px;
+  padding: 16px;
+  border-radius: 24px;
+  background: rgba(6, 14, 34, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: grid;
+  gap: 12px;
+  align-items: center;
+}
+
+.player-circle.active {
+  box-shadow: 0 0 0 3px rgba(100, 211, 241, 0.15);
+  border-color: #3dabff;
+}
+
+.player-circle.top {
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.player-circle.left {
+  top: 50%;
+  left: 28px;
+  transform: translateY(-50%);
+}
+
+.player-circle.right {
+  top: 50%;
+  right: 28px;
+  transform: translateY(-50%);
+}
+
+.player-circle.top-left {
+  top: 18%;
+  left: 18%;
+}
+
+.player-circle.top-right {
+  top: 18%;
+  right: 18%;
+}
+
+.player-circle.bottom {
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 80px);
+  max-width: 760px;
+}
+
+.player-name {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.player-card-count,
+.player-turn-indicator {
+  font-size: 0.9rem;
+  color: #b8c6e5;
+}
+
+.player-turn-indicator.active {
+  color: #78f0ff;
+}
+
+.opponent-cards {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.hand-panel {
+  grid-column: 1 / -1;
+}
+
+.hand-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.hand-heading h3 {
+  margin: 0;
+}
+
+.hint {
+  color: #b8c6e5;
+}
+
+.card-hand {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.winner-overlay {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(1, 7, 25, 0.82);
+  z-index: 30;
+}
+
+.winner-card {
+  padding: 42px 38px;
+  border-radius: 32px;
+  background: linear-gradient(180deg, rgba(16, 44, 95, 0.98), rgba(8, 17, 42, 0.96));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  text-align: center;
+}
+
+.winner-card h1 {
+  margin: 0 0 14px;
+  font-size: 3rem;
+}
+
+.winner-card p {
+  margin: 0 0 18px;
+  color: #dbe6ff;
+}
+
+.confetti-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  margin: 20px 0 12px;
+}
+
+.confetti-piece {
+  width: 14px;
+  height: 24px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #ffe969, #ff5fa2);
+  transform: rotate(25deg);
+}
+
+.bottom-toast {
+  position: fixed;
+  bottom: 22px;
+  right: 22px;
+  width: min(320px, calc(100% - 44px));
+}

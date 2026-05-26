@@ -1,0 +1,102 @@
+.lobby-view {
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.lobby-panel {
+  width: min(900px, 100%);
+  display: grid;
+  gap: 24px;
+}
+
+.lobby-card {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.lobby-card h1,
+.lobby-card h2 {
+  margin: 0 0 12px;
+}
+
+.lobby-card p {
+  margin: 0 0 24px;
+  color: #c7d1e9;
+}
+
+.lobby-actions {
+  display: grid;
+  gap: 18px;
+}
+
+.lobby-actions button,
+.join-room-form button {
+  width: 100%;
+}
+
+.join-room-form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+}
+
+.join-room-form input {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #eef3ff;
+  padding: 14px 16px;
+}
+
+.room-summary {
+  max-width: 900px;
+}
+
+.room-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.room-meta div {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 18px;
+  padding: 16px;
+}
+
+.room-meta strong,
+.player-list-item span {
+  display: block;
+}
+
+.room-meta strong {
+  color: #8ab7ff;
+  margin-bottom: 8px;
+}
+
+.player-list {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.player-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 16px 18px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.lobby-footer {
+  display: grid;
+  gap: 16px;
+}
+
+.lobby-footer .hint {
+  color: #b8c6e5;
+}
