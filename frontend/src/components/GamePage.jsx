@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import CardHand from './CardHand';
 import PlayerCircle from './PlayerCircle';
 import WinnerOverlay from './WinnerOverlay';
@@ -32,44 +33,43 @@ export default function GamePage({ username, clientId, room, gameState, onPlayCa
   return (
     <div className="view-container game-view">
       <div className="game-shell">
-        <div className="game-status-panel card">
-          <h2>Room {room?.roomId}</h2>
-          <div className="status-row">
-            <span>Current Turn</span>
-            <strong>{gameState?.currentTurnName || 'Waiting'}</strong>
-          </div>
-          <div className="status-row">
-            <span>Deck</span>
-            <strong>{gameState?.deckCount ?? 0}</strong>
-          </div>
-          <div className="status-row">
-            <span>Players</span>
-            <strong>{gameState?.players?.length || 0}</strong>
-          </div>
-          <div className="status-row">
-            <span>Status</span>
-            <strong>{gameState?.status === 'playing' ? 'In progress' : gameState?.status}</strong>
-          </div>
-        </div>
-
-        <div className="table-area">
+        <div className="table-area full-table">
+          <div className="table-glow" />
+          <div className="table-particles" />
           <div className="table-center">
             <div className={`direction-indicator ${gameState?.direction}`}>
               <div className="arrow" />
             </div>
-            <button className={`draw-deck${deckEnabled ? '' : ' disabled'}`} onClick={deckEnabled ? onDrawCard : undefined}>
-              <span>Draw</span>
-              <small>{gameState?.deckCount ?? 0}</small>
+            <button className={`draw-deck${deckEnabled ? '' : ' disabled'}`} onClick={deckEnabled ? onDrawCard : undefined} aria-label="Draw card">
+              <div className="draw-stack" aria-hidden="true">
+                <span className="stack-card">DRAW</span>
+                <span className="stack-card">DRAW</span>
+                <span className="stack-card">DRAW</span>
+              </div>
+              <div className="draw-label" aria-hidden="true">
+                <strong>Draw</strong>
+                <small>{gameState?.deckCount ?? 0}</small>
+              </div>
             </button>
             <div className="discard-card">
-              {openCard ? (
-                <div className={`uno-card ${openCard.color}`}>
-                  <span className="number">{openCard.number}</span>
-                  <span className="color-label">{openCard.color}</span>
-                </div>
-              ) : (
-                <div className="card-back small" />
-              )}
+              <AnimatePresence>
+                {openCard ? (
+                  <motion.div
+                    key={`${openCard.color}-${openCard.number}`}
+                    initial={{ y: 20, opacity: 0, scale: 0.96 }}
+                    animate={{ y: 0, opacity: 1, scale: 1 }}
+                    exit={{ y: -20, opacity: 0, scale: 0.96 }}
+                    transition={{ duration: 0.32, ease: [0.2,0.9,0.3,1] }}
+                    className={`uno-card ${openCard.color} played`}
+                    style={{ boxShadow: `0 36px 80px rgba(0,0,0,0.45), 0 0 40px ${openCard.color === 'red' ? 'rgba(255,80,80,0.18)' : openCard.color === 'blue' ? 'rgba(60,150,255,0.14)' : openCard.color === 'green' ? 'rgba(80,220,140,0.12)' : 'rgba(240,200,80,0.12)'}` }}
+                  >
+                    <span className="number">{openCard.number}</span>
+                    <span className="color-label">{openCard.color}</span>
+                  </motion.div>
+                ) : (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card-back small" />
+                )}
+              </AnimatePresence>
             </div>
           </div>
 

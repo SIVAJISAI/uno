@@ -12,6 +12,7 @@
     "start": "npm run build:frontend && node server/src/app.js"
   },
   "dependencies": {
+    "framer-motion": "^7.6.11",
     "hono": "^3.4.8",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
