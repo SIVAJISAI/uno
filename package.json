@@ -4,10 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev:frontend": "cd frontend && vite",
+    "dev:frontend": "cd frontend && vite --config vite.config.js",
     "dev:server": "node server/src/app.js",
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:server\"",
-    "build:frontend": "cd frontend && vite build",
+    "build:frontend": "cd frontend && vite build --config vite.config.js",
     "build": "npm run build:frontend",
     "start": "npm run build:frontend && node server/src/app.js"
   },

@@ -108,6 +108,20 @@ function broadcastToRoom(roomId, message) {
   });
 }
 
+function broadcastGameStateToRoom(roomId, eventType = ROOM_EVENTS.GAME_STATE_UPDATED) {
+  const room = roomManager.getRoom(roomId);
+  if (!room) return;
+  room.players.forEach((player) => {
+    const ws = connections.get(player.clientId);
+    if (ws) {
+      safeSend(ws, {
+        type: eventType,
+        payload: roomManager.getGameState(roomId, player.clientId)
+      });
+    }
+  });
+}
+
 wsServer.on('connection', (ws) => {
   const clientId = createClientId();
   console.log(`[WS] Connection opened: ${clientId}`);
@@ -159,12 +173,13 @@ wsServer.on('connection', (ws) => {
           return;
         }
         case CLIENT_EVENTS.START_GAME: {
-          const room = roomManager.startGame(clientId);
-          if (!room.success) {
-            return safeSend(ws, { type: ROOM_EVENTS.INVALID_MOVE, payload: { message: room.message } });
+          const result = roomManager.startGame(clientId);
+          if (!result.success) {
+            return safeSend(ws, { type: ROOM_EVENTS.INVALID_MOVE, payload: { message: result.message } });
           }
+          const room = result.room;
           broadcastToRoom(room.roomId, { type: ROOM_EVENTS.GAME_STARTED, payload: roomManager.sanitizeRoom(room.roomId, clientId) });
-          broadcastToRoom(room.roomId, { type: ROOM_EVENTS.GAME_STATE_UPDATED, payload: roomManager.getGameState(room.roomId, clientId) });
+          broadcastGameStateToRoom(room.roomId, ROOM_EVENTS.GAME_STATE_UPDATED);
           return;
         }
         case CLIENT_EVENTS.PLAY_CARD: {
@@ -173,9 +188,9 @@ wsServer.on('connection', (ws) => {
           if (!result.success) {
             return safeSend(ws, { type: ROOM_EVENTS.INVALID_MOVE, payload: { message: result.message } });
           }
-          broadcastToRoom(result.roomId, { type: ROOM_EVENTS.GAME_STATE_UPDATED, payload: roomManager.getGameState(result.roomId, clientId) });
+          broadcastGameStateToRoom(result.roomId, ROOM_EVENTS.GAME_STATE_UPDATED);
           if (result.finished) {
-            broadcastToRoom(result.roomId, { type: ROOM_EVENTS.GAME_FINISHED, payload: roomManager.getGameState(result.roomId, clientId) });
+            broadcastGameStateToRoom(result.roomId, ROOM_EVENTS.GAME_FINISHED);
           }
           return;
         }
@@ -184,7 +199,7 @@ wsServer.on('connection', (ws) => {
           if (!result.success) {
             return safeSend(ws, { type: ROOM_EVENTS.INVALID_MOVE, payload: { message: result.message } });
           }
-          broadcastToRoom(result.roomId, { type: ROOM_EVENTS.GAME_STATE_UPDATED, payload: roomManager.getGameState(result.roomId, clientId) });
+          broadcastGameStateToRoom(result.roomId, ROOM_EVENTS.GAME_STATE_UPDATED);
           return;
         }
         default:

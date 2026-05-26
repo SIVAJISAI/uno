@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import useWebSocket from './hooks/useWebSocket';
 import LoginPage from './components/LoginPage';
 import LobbyPage from './components/LobbyPage';
@@ -42,15 +42,7 @@ function App() {
     };
   }, []);
 
-  const { socketReady, sendMessage } = useWebSocket(handleServerMessage);
-
-  useEffect(() => {
-    if (page === PAGE.GAME && gameState?.status === 'finished') {
-      setPendingAction(false);
-    }
-  }, [gameState, page]);
-
-  function handleServerMessage(message) {
+  const handleServerMessage = useCallback((message) => {
     const { type, payload } = message || {};
     switch (type) {
       case 'CONNECTED':
@@ -90,7 +82,15 @@ function App() {
       default:
         break;
     }
-  }
+  }, []);
+
+  const { socketReady, sendMessage } = useWebSocket(handleServerMessage);
+
+  useEffect(() => {
+    if (page === PAGE.GAME && gameState?.status === 'finished') {
+      setPendingAction(false);
+    }
+  }, [gameState, page]);
 
   function handleLogin(usernameText) {
     setErrorMessage(null);
