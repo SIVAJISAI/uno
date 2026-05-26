@@ -85,17 +85,17 @@ export default function GamePage({ username, clientId, room, gameState, onPlayCa
             </div>
           </div>
         </div>
+      </div>
 
-        <div className="hand-panel card">
-          <div className="hand-heading">
-            <div>
-              <h3>Your Hand</h3>
-              <p>Click a valid card to play.</p>
-            </div>
-            <div className="hint">{!isCurrentTurn ? 'Wait for your turn' : 'Select a card or draw a card.'}</div>
+      <div className="hand-panel card">
+        <div className="hand-heading">
+          <div>
+            <h3>Your Hand</h3>
+            <p>Click a valid card to play.</p>
           </div>
-          <CardHand hand={selfHand} openCard={openCard} isCurrentTurn={isCurrentTurn} onPlayCard={onPlayCard} disabled={pendingAction || !isCurrentTurn || gameState?.status !== 'playing'} />
+          <div className="hint">{!isCurrentTurn ? 'Wait for your turn' : 'Select a card or draw a card.'}</div>
         </div>
+        <CardHand hand={selfHand} openCard={openCard} isCurrentTurn={isCurrentTurn} onPlayCard={onPlayCard} disabled={pendingAction || !isCurrentTurn || gameState?.status !== 'playing'} />
       </div>
       {gameState?.status === 'finished' && <WinnerOverlay winnerName={gameState.winnerName} />}
       {error && <div className="toast error bottom-toast">{error}</div>}
