@@ -23,6 +23,7 @@
 .uno-card.blue { background: linear-gradient(180deg,#5c9aff 0%,#1560d6 100%); box-shadow: 0 14px 48px rgba(60,120,255,0.12) }
 .uno-card.green { background: linear-gradient(180deg,#4fed96 0%,#1d7d4a 100%); box-shadow: 0 14px 48px rgba(76,220,150,0.12) }
 .uno-card.yellow { background: linear-gradient(180deg,#fbe57a 0%,#d4a921 100%); color:#111; box-shadow: 0 14px 48px rgba(240,200,80,0.12) }
+.uno-card.black { background: linear-gradient(180deg,#111 0%,#333 100%); box-shadow: 0 18px 48px rgba(0,0,0,0.5); color: #fff; }
 
 .uno-card .number { font-size: 3.2rem; font-weight: 900; line-height: 1 }
 .uno-card .color-label { font-size: 0.9rem; letter-spacing:0.06em }
@@ -53,6 +54,23 @@
 .card-hand .uno-card:hover { transform: translateY(-18px) rotate(-2deg) scale(1.03) }
 .card-hand .uno-card.selected { transform: translateY(-38px) scale(1.08) rotate(-3deg); box-shadow: 0 48px 120px rgba(8,20,50,0.75); z-index:50 }
 .card-hand .uno-card.selected-move { opacity: 0.12; transform: none !important; pointer-events: none; }
+
+.color-choice {
+  min-width: 120px;
+  padding: 12px 16px;
+  margin: 0 8px;
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 160ms ease, opacity 160ms ease;
+}
+.color-choice:hover { transform: translateY(-2px); }
+.color-choice.red { background: #ef4a4a; }
+.color-choice.green { background: #2cb67d; }
+.color-choice.blue { background: #3d89ff; }
+.color-choice.yellow { background: #f4c145; color: #111; }
 
 /* animated draw -> hand and play animations rely on class toggles from JS */
 .moving { transition: transform 360ms cubic-bezier(.2,.9,.3,1), opacity 240ms ease }

@@ -200,17 +200,18 @@ wsServer.on('connection', (ws) => {
           if (!result.success) {
             return safeSend(ws, { type: ROOM_EVENTS.INVALID_MOVE, payload: { message: result.message } });
           }
-          // Broadcast game state update
           broadcastGameStateToRoom(result.roomId, ROOM_EVENTS.GAME_STATE_UPDATED);
+          if (result.finished) {
+            broadcastGameStateToRoom(result.roomId, ROOM_EVENTS.GAME_FINISHED);
+          }
 
-          // Emit specific power events
           if (result.action === '+2') {
-            broadcastToRoom(result.roomId, { type: POWER_EVENTS.POWER_CARD_PLAYED, payload: { playerId: clientId, action: '+2', accumulatedPenalty: result.accumulatedPenalty } });
+            broadcastToRoom(result.roomId, { type: POWER_EVENTS.POWER_CARD_PLAYED, payload: { playerId: clientId, action: '+2', pendingDrawCount: result.accumulatedPenalty } });
             if (result.penaltyResolved) {
-              broadcastToRoom(result.roomId, { type: POWER_EVENTS.DRAW_PENALTY_UPDATED, payload: { accumulatedPenalty: 0, resolvedBy: result.skippedPlayerId, drawnCount: result.drawnCount } });
+              broadcastToRoom(result.roomId, { type: POWER_EVENTS.DRAW_PENALTY_UPDATED, payload: { pendingDrawCount: 0, resolvedBy: result.skippedPlayerId, drawnCount: result.drawnCount } });
               broadcastToRoom(result.roomId, { type: POWER_EVENTS.PLAYER_SKIPPED, payload: { skippedPlayerId: result.skippedPlayerId, nextPlayerId: result.nextPlayerId } });
             } else {
-              broadcastToRoom(result.roomId, { type: POWER_EVENTS.DRAW_PENALTY_UPDATED, payload: { accumulatedPenalty: result.accumulatedPenalty, nextPlayerId: result.nextPlayerId } });
+              broadcastToRoom(result.roomId, { type: POWER_EVENTS.DRAW_PENALTY_UPDATED, payload: { pendingDrawCount: result.accumulatedPenalty, nextPlayerId: result.nextPlayerId } });
             }
           } else if (result.action === 'reverse') {
             broadcastToRoom(result.roomId, { type: POWER_EVENTS.POWER_CARD_PLAYED, payload: { playerId: clientId, action: 'reverse', direction: result.direction } });
@@ -222,15 +223,35 @@ wsServer.on('connection', (ws) => {
 
           return;
         }
+        case CLIENT_EVENTS.SELECT_COLOR: {
+          const { color } = payload || {};
+          const result = roomManager.selectColor(clientId, color);
+          if (!result.success) {
+            return safeSend(ws, { type: ROOM_EVENTS.INVALID_MOVE, payload: { message: result.message } });
+          }
+          broadcastGameStateToRoom(result.roomId, ROOM_EVENTS.GAME_STATE_UPDATED);
+          if (result.finished) {
+            broadcastGameStateToRoom(result.roomId, ROOM_EVENTS.GAME_FINISHED);
+          }
+          broadcastToRoom(result.roomId, { type: POWER_EVENTS.COLOR_SELECTED, payload: { playerId: clientId, color: result.activeColor, action: result.action, nextPlayerId: result.nextPlayerId } });
+          if (result.action === 'wild_draw_four') {
+            if (result.penaltyResolved) {
+              broadcastToRoom(result.roomId, { type: POWER_EVENTS.DRAW_PENALTY_UPDATED, payload: { pendingDrawCount: 0, resolvedBy: result.skippedPlayerId, drawnCount: result.drawnCount } });
+              broadcastToRoom(result.roomId, { type: POWER_EVENTS.PLAYER_SKIPPED, payload: { skippedPlayerId: result.skippedPlayerId, nextPlayerId: result.nextPlayerId } });
+            } else if (result.pendingDrawCount > 0) {
+              broadcastToRoom(result.roomId, { type: POWER_EVENTS.DRAW_PENALTY_UPDATED, payload: { pendingDrawCount: result.pendingDrawCount, nextPlayerId: result.nextPlayerId } });
+            }
+          }
+          return;
+        }
         case CLIENT_EVENTS.DRAW_CARD: {
           const result = roomManager.drawCard(clientId);
           if (!result.success) {
             return safeSend(ws, { type: ROOM_EVENTS.INVALID_MOVE, payload: { message: result.message } });
           }
-          // If drawing resolved a penalty, broadcast penalty update and skipped player
           if (result.penaltyResolved) {
-            broadcastToRoom(result.roomId, { type: POWER_EVENTS.DRAW_PENALTY_UPDATED, payload: { accumulatedPenalty: 0, resolvedBy: clientId, drawnCount: result.drawnCount } });
-            broadcastToRoom(result.roomId, { type: POWER_EVENTS.PLAYER_SKIPPED, payload: { skippedPlayerId: clientId } });
+            broadcastToRoom(result.roomId, { type: POWER_EVENTS.DRAW_PENALTY_UPDATED, payload: { pendingDrawCount: 0, resolvedBy: clientId, drawnCount: result.drawnCount } });
+            broadcastToRoom(result.roomId, { type: POWER_EVENTS.PLAYER_SKIPPED, payload: { skippedPlayerId: clientId, nextPlayerId: result.nextPlayerId } });
           }
           broadcastGameStateToRoom(result.roomId, ROOM_EVENTS.GAME_STATE_UPDATED);
           return;

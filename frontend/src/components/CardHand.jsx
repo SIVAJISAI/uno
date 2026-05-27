@@ -8,7 +8,17 @@ export default function CardHand({ hand, openCard, isCurrentTurn, onPlayCard, di
         const isDisabled = !!disabled;
         const isSelected = selectedCardIndex === index;
         const displayKey = `${card.color}-${card.number ?? card.type}-${index}`;
-        const typeLabel = card.type === '+2' ? '+2' : card.type === 'reverse' ? '↻' : card.type === 'skip' ? '⦸' : null;
+        const typeLabel = card.type === '+2'
+          ? '+2'
+          : card.type === 'reverse'
+          ? '↻'
+          : card.type === 'skip'
+          ? '⦸'
+          : card.type === 'WILD_DRAW_FOUR'
+          ? '+4'
+          : card.type === 'WILD_COLOR'
+          ? '✦'
+          : null;
         return (
           <motion.button
             key={displayKey}

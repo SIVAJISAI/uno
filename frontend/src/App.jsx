@@ -124,6 +124,11 @@ function App() {
     }
   }
 
+  function handleSelectColor(color) {
+    setPendingAction(true);
+    sendMessage('SELECT_COLOR', { color });
+  }
+
   function handleDrawCard() {
     setPendingAction(true);
     sendMessage('DRAW_CARD');
@@ -154,6 +159,7 @@ function App() {
           gameState={gameState}
           onPlayCard={handlePlayCard}
           onDrawCard={handleDrawCard}
+          onSelectColor={handleSelectColor}
           error={errorMessage}
           pendingAction={pendingAction}
         />

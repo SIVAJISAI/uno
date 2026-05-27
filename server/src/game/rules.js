@@ -1,16 +1,23 @@
 import { peekTopCard } from './deck.js';
 
-export function isPlayable(card, openCard) {
+const WILD_TYPES = ['WILD_DRAW_FOUR', 'WILD_COLOR'];
+
+export function isPlayable(card, openCard, activeColor = null) {
   if (!card || !openCard) return false;
-  // match by type (action card), color, or number
+  if (WILD_TYPES.includes(card.type)) return true;
+
+  const effectiveColor = openCard.color === 'black' && activeColor ? activeColor.toLowerCase() : openCard.color;
+
+  if (card.color && effectiveColor && card.color === effectiveColor) return true;
   if (card.type && openCard.type && card.type === openCard.type) return true;
-  if (card.color && openCard.color && card.color === openCard.color) return true;
   if (typeof card.number !== 'undefined' && typeof openCard.number !== 'undefined' && card.number === openCard.number) return true;
   return false;
 }
 
-export function findPlayableCards(hand, openCard) {
-  return hand.map((card, index) => ({ card, index })).filter(({ card }) => isPlayable(card, openCard));
+export function findPlayableCards(hand, openCard, activeColor = null) {
+  return hand
+    .map((card, index) => ({ card, index }))
+    .filter(({ card }) => isPlayable(card, openCard, activeColor));
 }
 
 export function getNextTurnIndex(currentIndex, players) {

@@ -21,7 +21,7 @@ function getPlayerPositions(players, clientId) {
   }));
 }
 
-export default function GamePage({ username, clientId, room, gameState, onPlayCard, onDrawCard, error, pendingAction }) {
+export default function GamePage({ username, clientId, room, gameState, onPlayCard, onDrawCard, onSelectColor, error, pendingAction }) {
   const currentPlayerId = gameState?.currentTurnId;
   const isCurrentTurn = currentPlayerId === clientId;
   const selfHand = gameState?.selfHand || [];
@@ -116,6 +116,13 @@ export default function GamePage({ username, clientId, room, gameState, onPlayCa
     onDrawCard();
   };
 
+  const handleColorSelection = (color) => {
+    if (!onSelectColor) return;
+    onSelectColor(color);
+  };
+
+  const pendingColorSelection = !!gameState?.pendingColorSelection && gameState?.currentTurnId === clientId;
+
   return (
     <div className="view-container game-view">
       <div className="game-shell">
@@ -178,11 +185,13 @@ export default function GamePage({ username, clientId, room, gameState, onPlayCa
                     style={{ boxShadow: `0 36px 80px rgba(0,0,0,0.45), 0 0 40px ${openCard.color === 'red' ? 'rgba(255,80,80,0.18)' : openCard.color === 'blue' ? 'rgba(60,150,255,0.14)' : openCard.color === 'green' ? 'rgba(80,220,140,0.12)' : 'rgba(240,200,80,0.12)'}` }}
                   >
                     {openCard.type ? (
-                      <span className="type-label">{openCard.type === '+2' ? '+2' : openCard.type === 'reverse' ? '↻' : '⦸'}</span>
+                      <span className="type-label">
+                        {openCard.type === '+2' ? '+2' : openCard.type === 'reverse' ? '↻' : openCard.type === 'skip' ? '⦸' : openCard.type === 'WILD_DRAW_FOUR' ? '+4' : '✦'}
+                      </span>
                     ) : (
                       <span className="number">{openCard.number}</span>
                     )}
-                    <span className="color-label">{openCard.color}</span>
+                    <span className="color-label">{gameState?.activeColor || openCard.color}</span>
                   </motion.div>
                 ) : (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card-back small" />
@@ -240,10 +249,30 @@ export default function GamePage({ username, clientId, room, gameState, onPlayCa
           openCard={openCard}
           isCurrentTurn={isCurrentTurn}
           onPlayCard={handlePlayWithAnimation}
-          disabled={pendingAction || !isCurrentTurn || gameState?.status !== 'playing'}
+          disabled={pendingAction || !isCurrentTurn || gameState?.status !== 'playing' || pendingColorSelection}
           selectedCardIndex={selectedPlayIndex}
         />
       </div>
+      {pendingColorSelection && (
+        <div className="modal-overlay">
+          <div className="color-select-modal card">
+            <h3>Choose a color</h3>
+            <div className="color-options">
+              {['red', 'green', 'blue', 'yellow'].map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  className={`color-choice ${color}`}
+                  onClick={() => handleColorSelection(color)}
+                >
+                  {color.charAt(0).toUpperCase() + color.slice(1)}
+                </button>
+              ))}
+            </div>
+            <p className="modal-note">You must choose a color before the game continues.</p>
+          </div>
+        </div>
+      )}
       {gameState?.status === 'finished' && <WinnerOverlay winnerName={gameState.winnerName} />}
       {error && <div className="toast error bottom-toast">{error}</div>}
     </div>

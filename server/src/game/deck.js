@@ -1,6 +1,7 @@
 const COLORS = ['red', 'blue', 'green', 'yellow'];
 const NUMBERS = Array.from({ length: 10 }, (_, index) => index);
 const POWER_TYPES = ['+2', 'reverse', 'skip'];
+const WILD_TYPES = ['WILD_DRAW_FOUR', 'WILD_COLOR'];
 const FAVORED_USERNAMES = ['sivaji', 'gopi'];
 
 function shuffle(array) {
@@ -20,6 +21,10 @@ export function isPowerCard(card) {
   return Boolean(card && typeof card.type === 'string');
 }
 
+export function isWildCard(card) {
+  return Boolean(card && WILD_TYPES.includes(card.type));
+}
+
 export function isNumberCard(card) {
   return Boolean(card && typeof card.number !== 'undefined');
 }
@@ -36,6 +41,12 @@ export function createDeck() {
       deck.push({ color, type });
       deck.push({ color, type });
     });
+  });
+  // Add wild cards
+  WILD_TYPES.forEach((type) => {
+    for (let i = 0; i < 4; i += 1) {
+      deck.push({ color: 'black', type });
+    }
   });
   return shuffle(deck);
 }
