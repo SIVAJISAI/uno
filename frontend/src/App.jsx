@@ -115,9 +115,13 @@ function App() {
     sendMessage('START_GAME');
   }
 
-  function handlePlayCard(cardIndex) {
+  function handlePlayCard(cardIndex, card) {
     setPendingAction(true);
-    sendMessage('PLAY_CARD', { cardIndex });
+    if (card && card.type) {
+      sendMessage('PLAY_POWER_CARD', { cardIndex });
+    } else {
+      sendMessage('PLAY_CARD', { cardIndex });
+    }
   }
 
   function handleDrawCard() {

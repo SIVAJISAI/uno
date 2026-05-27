@@ -1,5 +1,6 @@
 const COLORS = ['red', 'blue', 'green', 'yellow'];
 const NUMBERS = Array.from({ length: 10 }, (_, index) => index);
+const POWER_TYPES = ['+2', 'reverse', 'skip'];
 
 function shuffle(array) {
   const copy = [...array];
@@ -16,6 +17,11 @@ export function createDeck() {
     NUMBERS.forEach((number) => {
       deck.push({ color, number });
       deck.push({ color, number });
+    });
+    // add power cards for each color (two copies each)
+    POWER_TYPES.forEach((type) => {
+      deck.push({ color, type });
+      deck.push({ color, type });
     });
   });
   return shuffle(deck);

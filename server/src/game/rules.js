@@ -2,7 +2,11 @@ import { peekTopCard } from './deck.js';
 
 export function isPlayable(card, openCard) {
   if (!card || !openCard) return false;
-  return card.color === openCard.color || card.number === openCard.number;
+  // match by type (action card), color, or number
+  if (card.type && openCard.type && card.type === openCard.type) return true;
+  if (card.color && openCard.color && card.color === openCard.color) return true;
+  if (typeof card.number !== 'undefined' && typeof openCard.number !== 'undefined' && card.number === openCard.number) return true;
+  return false;
 }
 
 export function findPlayableCards(hand, openCard) {

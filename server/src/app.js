@@ -5,7 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { readFile, stat } from 'fs/promises';
 import { createRoomId, createClientId } from './utils/id.js';
-import { ROOM_EVENTS, CLIENT_EVENTS } from './game/events.js';
+import { ROOM_EVENTS, CLIENT_EVENTS, POWER_EVENTS } from './game/events.js';
 import { RoomManager } from './game/roomManager.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -194,10 +194,38 @@ wsServer.on('connection', (ws) => {
           }
           return;
         }
+        case CLIENT_EVENTS.PLAY_POWER_CARD: {
+          const { cardIndex } = payload || {};
+          const result = roomManager.playPowerCard(clientId, cardIndex);
+          if (!result.success) {
+            return safeSend(ws, { type: ROOM_EVENTS.INVALID_MOVE, payload: { message: result.message } });
+          }
+          // Broadcast game state update
+          broadcastGameStateToRoom(result.roomId, ROOM_EVENTS.GAME_STATE_UPDATED);
+
+          // Emit specific power events
+          if (result.action === '+2') {
+            broadcastToRoom(result.roomId, { type: POWER_EVENTS.POWER_CARD_PLAYED, payload: { playerId: clientId, action: '+2', accumulatedPenalty: result.accumulatedPenalty } });
+            broadcastToRoom(result.roomId, { type: POWER_EVENTS.DRAW_PENALTY_UPDATED, payload: { accumulatedPenalty: result.accumulatedPenalty, nextPlayerId: result.nextPlayerId } });
+          } else if (result.action === 'reverse') {
+            broadcastToRoom(result.roomId, { type: POWER_EVENTS.POWER_CARD_PLAYED, payload: { playerId: clientId, action: 'reverse', direction: result.direction } });
+            broadcastToRoom(result.roomId, { type: POWER_EVENTS.DIRECTION_CHANGED, payload: { direction: result.direction, nextPlayerId: result.nextPlayerId } });
+          } else if (result.action === 'skip') {
+            broadcastToRoom(result.roomId, { type: POWER_EVENTS.POWER_CARD_PLAYED, payload: { playerId: clientId, action: 'skip', skippedPlayerId: result.skippedPlayerId } });
+            broadcastToRoom(result.roomId, { type: POWER_EVENTS.PLAYER_SKIPPED, payload: { skippedPlayerId: result.skippedPlayerId, nextPlayerId: result.nextPlayerId } });
+          }
+
+          return;
+        }
         case CLIENT_EVENTS.DRAW_CARD: {
           const result = roomManager.drawCard(clientId);
           if (!result.success) {
             return safeSend(ws, { type: ROOM_EVENTS.INVALID_MOVE, payload: { message: result.message } });
+          }
+          // If drawing resolved a penalty, broadcast penalty update and skipped player
+          if (result.penaltyResolved) {
+            broadcastToRoom(result.roomId, { type: POWER_EVENTS.DRAW_PENALTY_UPDATED, payload: { accumulatedPenalty: 0, resolvedBy: clientId, drawnCount: result.drawnCount } });
+            broadcastToRoom(result.roomId, { type: POWER_EVENTS.PLAYER_SKIPPED, payload: { skippedPlayerId: clientId } });
           }
           broadcastGameStateToRoom(result.roomId, ROOM_EVENTS.GAME_STATE_UPDATED);
           return;

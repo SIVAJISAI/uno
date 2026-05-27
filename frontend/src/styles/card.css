@@ -26,6 +26,8 @@
 
 .uno-card .number { font-size: 3.2rem; font-weight: 900; line-height: 1 }
 .uno-card .color-label { font-size: 0.9rem; letter-spacing:0.06em }
+.uno-card .type-label { font-size: 2.4rem; font-weight: 900; line-height: 1 }
+.card-hand .type-label { display: block; margin-top: 8px }
 
 .uno-card.disabled { opacity: 0.5; transform:none }
 
@@ -50,6 +52,7 @@
 .card-hand .uno-card { margin: 0; cursor: pointer; pointer-events: auto }
 .card-hand .uno-card:hover { transform: translateY(-18px) rotate(-2deg) scale(1.03) }
 .card-hand .uno-card.selected { transform: translateY(-38px) scale(1.08) rotate(-3deg); box-shadow: 0 48px 120px rgba(8,20,50,0.75); z-index:50 }
+.card-hand .uno-card.selected-move { opacity: 0.12; transform: none !important; pointer-events: none; }
 
 /* animated draw -> hand and play animations rely on class toggles from JS */
 .moving { transition: transform 360ms cubic-bezier(.2,.9,.3,1), opacity 240ms ease }

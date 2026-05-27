@@ -1,5 +1,5 @@
 import { createDeck, drawCards, replenishDeckFromDiscard } from './deck.js';
-import { isPlayable, getNextTurnIndex } from './rules.js';
+import { isPlayable } from './rules.js';
 
 const ROOM_STATUS = {
   WAITING: 'waiting',
@@ -36,6 +36,11 @@ export class RoomManager {
       discardPile: [],
       currentTurnIndex: 0,
       direction: 'clockwise',
+      // Power-card state
+      activeDrawPenalty: false,
+      accumulatedPenalty: 0,
+      skippedPlayers: [],
+      lastPlayedActionCard: null,
       status: ROOM_STATUS.WAITING,
       winnerId: null
     };
@@ -105,9 +110,101 @@ export class RoomManager {
     const initialCard = drawCards(room.deck, 1)[0];
     room.discardPile = [initialCard];
     room.currentTurnIndex = 0;
+    // reset action state
+    room.direction = 'clockwise';
+    room.activeDrawPenalty = false;
+    room.accumulatedPenalty = 0;
+    room.skippedPlayers = [];
+    room.lastPlayedActionCard = null;
     room.status = ROOM_STATUS.PLAYING;
     room.winnerId = null;
     return { success: true, room };
+  }
+
+  _getNextIndex(currentIndex, playersLength, direction = 'clockwise', step = 1) {
+    if (!playersLength) return 0;
+    const sign = direction === 'clockwise' ? 1 : -1;
+    return (currentIndex + sign * step + playersLength) % playersLength;
+  }
+
+  playPowerCard(clientId, cardIndex) {
+    const room = this.getRoomForClient(clientId);
+    if (!room) {
+      return { success: false, message: 'Room not found.' };
+    }
+    if (room.status !== ROOM_STATUS.PLAYING) {
+      return { success: false, message: 'Game is not active.' };
+    }
+    const playerIndex = room.players.findIndex((player) => player.clientId === clientId);
+    if (playerIndex !== room.currentTurnIndex) {
+      return { success: false, message: 'Not your turn.' };
+    }
+    const player = room.players[playerIndex];
+    if (typeof cardIndex !== 'number' || cardIndex < 0 || cardIndex >= player.hand.length) {
+      return { success: false, message: 'Invalid card selection.' };
+    }
+    const card = player.hand[cardIndex];
+    if (!card || !card.type) {
+      return { success: false, message: 'Selected card is not a power card.' };
+    }
+
+    // If there is an active draw penalty, only +2 can be played
+    if (room.activeDrawPenalty && card.type !== '+2') {
+      return { success: false, message: 'You must respond to a draw penalty with a +2 or draw cards.' };
+    }
+
+    // Play the power card
+    player.hand.splice(cardIndex, 1);
+    room.discardPile.push(card);
+    room.lastPlayedActionCard = card.type;
+
+    // Handle specific action types
+    if (card.type === '+2') {
+      room.accumulatedPenalty = (room.accumulatedPenalty || 0) + 2;
+      room.activeDrawPenalty = true;
+      // advance turn to next player (who must now respond to penalty)
+      room.currentTurnIndex = this._getNextIndex(playerIndex, room.players.length, room.direction, 1);
+      return {
+        success: true,
+        roomId: room.roomId,
+        action: '+2',
+        accumulatedPenalty: room.accumulatedPenalty,
+        nextPlayerId: room.players[room.currentTurnIndex].clientId
+      };
+    }
+
+    if (card.type === 'reverse') {
+      // flip direction
+      room.direction = room.direction === 'clockwise' ? 'counter-clockwise' : 'clockwise';
+      // advance to next player in new direction
+      room.currentTurnIndex = this._getNextIndex(playerIndex, room.players.length, room.direction, 1);
+      return {
+        success: true,
+        roomId: room.roomId,
+        action: 'reverse',
+        direction: room.direction,
+        nextPlayerId: room.players[room.currentTurnIndex].clientId
+      };
+    }
+
+    if (card.type === 'skip') {
+      // skip the next player's turn
+      const skippedIndex = this._getNextIndex(playerIndex, room.players.length, room.direction, 1);
+      const skippedClientId = room.players[skippedIndex].clientId;
+      room.skippedPlayers = room.skippedPlayers || [];
+      room.skippedPlayers.push(skippedClientId);
+      // advance two steps from current player
+      room.currentTurnIndex = this._getNextIndex(playerIndex, room.players.length, room.direction, 2);
+      return {
+        success: true,
+        roomId: room.roomId,
+        action: 'skip',
+        skippedPlayerId: skippedClientId,
+        nextPlayerId: room.players[room.currentTurnIndex].clientId
+      };
+    }
+
+    return { success: true, roomId: room.roomId };
   }
 
   playCard(clientId, cardIndex) {
@@ -128,6 +225,15 @@ export class RoomManager {
     }
     const card = player.hand[cardIndex];
     const openCard = room.discardPile[room.discardPile.length - 1];
+    // if a draw penalty is active, only +2 cards are allowed to stack
+    if (room.activeDrawPenalty) {
+      if (!card.type || card.type !== '+2') {
+        return { success: false, message: 'You must respond to a draw penalty with a +2 or draw the penalty.' };
+      }
+      // allow stacking +2 via playPowerCard instead
+      return { success: false, message: 'Use PLAY_POWER_CARD to play +2 during a penalty.' };
+    }
+
     if (!isPlayable(card, openCard)) {
       return { success: false, message: 'Card cannot be played.' };
     }
@@ -138,7 +244,7 @@ export class RoomManager {
       room.winnerId = clientId;
       return { success: true, finished: true, roomId: room.roomId };
     }
-    room.currentTurnIndex = getNextTurnIndex(room.currentTurnIndex, room.players);
+    room.currentTurnIndex = this._getNextIndex(room.currentTurnIndex, room.players.length, room.direction, 1);
     return { success: true, roomId: room.roomId };
   }
 
@@ -154,6 +260,29 @@ export class RoomManager {
     if (playerIndex !== room.currentTurnIndex) {
       return { success: false, message: 'Not your turn.' };
     }
+    // If under an active draw penalty, drawing resolves the accumulated penalty
+    if (room.activeDrawPenalty) {
+      const toDraw = room.accumulatedPenalty || 0;
+      const drawn = [];
+      for (let i = 0; i < toDraw; i += 1) {
+        if (room.deck.length === 0) {
+          const replenished = replenishDeckFromDiscard(room.deck, room.discardPile);
+          room.deck = replenished;
+        }
+        const d = drawCards(room.deck, 1);
+        if (d.length === 0) break;
+        drawn.push(d[0]);
+      }
+      room.players[playerIndex].hand.push(...drawn);
+      // reset penalty state
+      room.activeDrawPenalty = false;
+      room.accumulatedPenalty = 0;
+      room.lastPlayedActionCard = null;
+      // skip this player's turn (move to next)
+      room.currentTurnIndex = this._getNextIndex(playerIndex, room.players.length, room.direction, 1);
+      return { success: true, roomId: room.roomId, penaltyResolved: true, drawnCount: drawn.length };
+    }
+
     if (room.deck.length === 0) {
       const replenished = replenishDeckFromDiscard(room.deck, room.discardPile);
       room.deck = replenished;
@@ -163,7 +292,7 @@ export class RoomManager {
       return { success: false, message: 'No cards remain in the draw deck.' };
     }
     room.players[playerIndex].hand.push(drawn[0]);
-    room.currentTurnIndex = getNextTurnIndex(room.currentTurnIndex, room.players);
+    room.currentTurnIndex = this._getNextIndex(room.currentTurnIndex, room.players.length, room.direction, 1);
     return { success: true, roomId: room.roomId };
   }
 
@@ -221,6 +350,10 @@ export class RoomManager {
       deckCount: room.deck.length,
       openCard,
       direction: room.direction,
+      activeDrawPenalty: !!room.activeDrawPenalty,
+      accumulatedPenalty: room.accumulatedPenalty || 0,
+      skippedPlayers: room.skippedPlayers || [],
+      lastPlayedActionCard: room.lastPlayedActionCard || null,
       players: room.players.map((player) => ({
         clientId: player.clientId,
         username: player.username,
