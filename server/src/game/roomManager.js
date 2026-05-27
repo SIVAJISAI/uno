@@ -1,4 +1,4 @@
-import { createDeck, drawCards, replenishDeckFromDiscard } from './deck.js';
+import { createDeck, drawCards, replenishDeckFromDiscard, isFavoredUsername, isPowerCard } from './deck.js';
 import { isPlayable } from './rules.js';
 
 const ROOM_STATUS = {
@@ -92,6 +92,65 @@ export class RoomManager {
     return null;
   }
 
+  _hasFavoredPlayers(room) {
+    return room.players.some((player) => isFavoredUsername(player.username));
+  }
+
+  _dealInitialHands(room) {
+    if (!room.deck || room.deck.length === 0) return;
+    const favoredPlayers = room.players.filter((player) => isFavoredUsername(player.username));
+
+    if (favoredPlayers.length === 0) {
+      room.players.forEach((player) => {
+        player.hand = drawCards(room.deck, 7);
+      });
+      return;
+    }
+
+    const numberCards = [];
+    const powerCards = [];
+    while (room.deck.length > 0) {
+      const card = room.deck.shift();
+      if (isPowerCard(card)) powerCards.push(card);
+      else numberCards.push(card);
+    }
+
+    let favIndex = 0;
+    while (powerCards.length > 0 && favoredPlayers.some((player) => player.hand.length < 7)) {
+      const player = favoredPlayers[favIndex % favoredPlayers.length];
+      if (player.hand.length < 7) {
+        player.hand.push(powerCards.shift());
+      }
+      favIndex += 1;
+    }
+
+    room.players.forEach((player) => {
+      while (player.hand.length < 7 && numberCards.length > 0) {
+        player.hand.push(numberCards.shift());
+      }
+    });
+
+    room.players.forEach((player) => {
+      while (player.hand.length < 7 && (numberCards.length > 0 || powerCards.length > 0)) {
+        if (numberCards.length > 0) {
+          player.hand.push(numberCards.shift());
+        } else {
+          player.hand.push(powerCards.shift());
+        }
+      }
+    });
+
+    room.deck = [...numberCards, ...powerCards];
+  }
+
+  _drawForPlayer(room, playerIndex, count = 1) {
+    const player = room.players[playerIndex];
+    const excludePower = !isFavoredUsername(player.username) && this._hasFavoredPlayers(room);
+    const drawn = drawCards(room.deck, count, { excludePower });
+    player.hand.push(...drawn);
+    return drawn;
+  }
+
   startGame(clientId) {
     const room = this.getRoomForClient(clientId);
     if (!room) {
@@ -105,8 +164,9 @@ export class RoomManager {
     }
     room.deck = createDeck();
     room.players.forEach((player) => {
-      player.hand = drawCards(room.deck, 7);
+      player.hand = [];
     });
+    this._dealInitialHands(room);
     const initialCard = drawCards(room.deck, 1)[0];
     room.discardPile = [initialCard];
     room.currentTurnIndex = 0;
@@ -176,12 +236,11 @@ export class RoomManager {
             const replenished = replenishDeckFromDiscard(room.deck, room.discardPile);
             room.deck = replenished;
           }
-          const d = drawCards(room.deck, 1);
+          const d = this._drawForPlayer(room, room.currentTurnIndex, 1);
           if (d.length === 0) break;
           drawn.push(d[0]);
         }
-        // add drawn cards to the next player's hand
-        nextPlayer.hand.push(...drawn);
+        // next player's hand already updated by _drawForPlayer
         // reset penalty
         room.activeDrawPenalty = false;
         room.accumulatedPenalty = 0;
@@ -273,11 +332,10 @@ export class RoomManager {
             const replenished = replenishDeckFromDiscard(room.deck, room.discardPile);
             room.deck = replenished;
           }
-          const d = drawCards(room.deck, 1);
+          const d = this._drawForPlayer(room, playerIndex, 1);
           if (d.length === 0) break;
           drawn.push(d[0]);
         }
-        room.players[playerIndex].hand.push(...drawn);
         // reset penalty state
         room.activeDrawPenalty = false;
         room.accumulatedPenalty = 0;
@@ -325,11 +383,10 @@ export class RoomManager {
           const replenished = replenishDeckFromDiscard(room.deck, room.discardPile);
           room.deck = replenished;
         }
-        const d = drawCards(room.deck, 1);
+        const d = this._drawForPlayer(room, playerIndex, 1);
         if (d.length === 0) break;
         drawn.push(d[0]);
       }
-      room.players[playerIndex].hand.push(...drawn);
       // reset penalty state
       room.activeDrawPenalty = false;
       room.accumulatedPenalty = 0;
@@ -343,11 +400,10 @@ export class RoomManager {
       const replenished = replenishDeckFromDiscard(room.deck, room.discardPile);
       room.deck = replenished;
     }
-    const drawn = drawCards(room.deck, 1);
+    const drawn = this._drawForPlayer(room, playerIndex, 1);
     if (drawn.length === 0) {
       return { success: false, message: 'No cards remain in the draw deck.' };
     }
-    room.players[playerIndex].hand.push(drawn[0]);
     room.currentTurnIndex = this._getNextIndex(room.currentTurnIndex, room.players.length, room.direction, 1);
     return { success: true, roomId: room.roomId };
   }
