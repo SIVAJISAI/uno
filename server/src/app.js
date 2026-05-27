@@ -206,7 +206,12 @@ wsServer.on('connection', (ws) => {
           // Emit specific power events
           if (result.action === '+2') {
             broadcastToRoom(result.roomId, { type: POWER_EVENTS.POWER_CARD_PLAYED, payload: { playerId: clientId, action: '+2', accumulatedPenalty: result.accumulatedPenalty } });
-            broadcastToRoom(result.roomId, { type: POWER_EVENTS.DRAW_PENALTY_UPDATED, payload: { accumulatedPenalty: result.accumulatedPenalty, nextPlayerId: result.nextPlayerId } });
+            if (result.penaltyResolved) {
+              broadcastToRoom(result.roomId, { type: POWER_EVENTS.DRAW_PENALTY_UPDATED, payload: { accumulatedPenalty: 0, resolvedBy: result.skippedPlayerId, drawnCount: result.drawnCount } });
+              broadcastToRoom(result.roomId, { type: POWER_EVENTS.PLAYER_SKIPPED, payload: { skippedPlayerId: result.skippedPlayerId, nextPlayerId: result.nextPlayerId } });
+            } else {
+              broadcastToRoom(result.roomId, { type: POWER_EVENTS.DRAW_PENALTY_UPDATED, payload: { accumulatedPenalty: result.accumulatedPenalty, nextPlayerId: result.nextPlayerId } });
+            }
           } else if (result.action === 'reverse') {
             broadcastToRoom(result.roomId, { type: POWER_EVENTS.POWER_CARD_PLAYED, payload: { playerId: clientId, action: 'reverse', direction: result.direction } });
             broadcastToRoom(result.roomId, { type: POWER_EVENTS.DIRECTION_CHANGED, payload: { direction: result.direction, nextPlayerId: result.nextPlayerId } });

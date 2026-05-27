@@ -164,6 +164,43 @@ export class RoomManager {
       room.activeDrawPenalty = true;
       // advance turn to next player (who must now respond to penalty)
       room.currentTurnIndex = this._getNextIndex(playerIndex, room.players.length, room.direction, 1);
+
+      const nextPlayer = room.players[room.currentTurnIndex];
+      // If the next player has any +2, they get a chance to play; otherwise auto-resolve now
+      const nextHasPlus2 = nextPlayer.hand.some((c) => c && c.type === '+2');
+      if (!nextHasPlus2) {
+        const toDraw = room.accumulatedPenalty || 0;
+        const drawn = [];
+        for (let i = 0; i < toDraw; i += 1) {
+          if (room.deck.length === 0) {
+            const replenished = replenishDeckFromDiscard(room.deck, room.discardPile);
+            room.deck = replenished;
+          }
+          const d = drawCards(room.deck, 1);
+          if (d.length === 0) break;
+          drawn.push(d[0]);
+        }
+        // add drawn cards to the next player's hand
+        nextPlayer.hand.push(...drawn);
+        // reset penalty
+        room.activeDrawPenalty = false;
+        room.accumulatedPenalty = 0;
+        room.lastPlayedActionCard = null;
+        const skippedPlayerId = nextPlayer.clientId;
+        // advance to the player after the skipped one
+        room.currentTurnIndex = this._getNextIndex(playerIndex, room.players.length, room.direction, 2);
+        return {
+          success: true,
+          roomId: room.roomId,
+          action: '+2',
+          accumulatedPenalty: 0,
+          penaltyResolved: true,
+          drawnCount: drawn.length,
+          skippedPlayerId,
+          nextPlayerId: room.players[room.currentTurnIndex].clientId
+        };
+      }
+
       return {
         success: true,
         roomId: room.roomId,
@@ -225,12 +262,31 @@ export class RoomManager {
     }
     const card = player.hand[cardIndex];
     const openCard = room.discardPile[room.discardPile.length - 1];
-    // if a draw penalty is active, only +2 cards are allowed to stack
+    // If a draw penalty is active and the player plays a non-+2 card,
+    // automatically resolve the accumulated penalty: draw cards, skip this player's turn.
     if (room.activeDrawPenalty) {
       if (!card.type || card.type !== '+2') {
-        return { success: false, message: 'You must respond to a draw penalty with a +2 or draw the penalty.' };
+        const toDraw = room.accumulatedPenalty || 0;
+        const drawn = [];
+        for (let i = 0; i < toDraw; i += 1) {
+          if (room.deck.length === 0) {
+            const replenished = replenishDeckFromDiscard(room.deck, room.discardPile);
+            room.deck = replenished;
+          }
+          const d = drawCards(room.deck, 1);
+          if (d.length === 0) break;
+          drawn.push(d[0]);
+        }
+        room.players[playerIndex].hand.push(...drawn);
+        // reset penalty state
+        room.activeDrawPenalty = false;
+        room.accumulatedPenalty = 0;
+        room.lastPlayedActionCard = null;
+        // skip this player's turn (move to next)
+        room.currentTurnIndex = this._getNextIndex(playerIndex, room.players.length, room.direction, 1);
+        return { success: true, roomId: room.roomId, penaltyResolved: true, drawnCount: drawn.length };
       }
-      // allow stacking +2 via playPowerCard instead
+      // if card is a +2, clients should call PLAY_POWER_CARD instead (handled separately)
       return { success: false, message: 'Use PLAY_POWER_CARD to play +2 during a penalty.' };
     }
 
