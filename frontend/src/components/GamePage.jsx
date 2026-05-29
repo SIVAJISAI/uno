@@ -226,6 +226,11 @@ export default function GamePage({ username, clientId, room, gameState, onPlayCa
             <PlayerCircle key={player.clientId} player={player} isActive={player.clientId === currentPlayerId} />
           ))}
 
+          {/* Direction arrow indicator */}
+          <div className="game-direction-arrow" aria-hidden="true">
+            {gameState?.direction === 'counterclockwise' ? '‹' : '›'}
+          </div>
+
           <div className={`player-circle bottom ${clientId === currentPlayerId ? 'active' : ''}`}>
             <div className="player-card-count">{selfHand.length} cards</div>
             <div className="player-name">{username} (You)</div>
@@ -235,6 +240,16 @@ export default function GamePage({ username, clientId, room, gameState, onPlayCa
           </div>
         </div>
       </div>
+
+      {/* UNO shout button */}
+      <button
+        className="uno-shout-btn"
+        type="button"
+        aria-label="UNO"
+        disabled={selfHand.length !== 1}
+      >
+        UNO
+      </button>
 
       <div className="hand-panel card" ref={handPanelRef}>
         <div className="hand-heading">
